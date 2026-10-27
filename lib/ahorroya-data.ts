@@ -1,6 +1,9 @@
+export type Currency = 'ARS' | 'USD'
+
 export type Goal = {
   id: string
   name: string
+  currency: Currency
   emoji: string
   saved: number
   target: number
@@ -15,6 +18,7 @@ export type Movement = {
   merchant: string
   category: string
   amount: number
+  currency: Currency
   icon: string
   tone: string
   day: string
@@ -26,23 +30,23 @@ export const initialSpendable = 684_500
 
 export const initialGoals: Goal[] = [
   {
-    id: 'casa', name: 'Mi casa', emoji: '🏡', saved: 4_850_000, target: 18_000_000,
+    id: 'casa', name: 'Mi casa', emoji: '🏡', currency: 'USD', saved: 4_850, target: 120_000,
     deadline: 'Oct 2029', color: '#14634f', createdAt: '12 feb 2025',
     contributions: [
-      { date: 'Hoy', amount: 187_500, label: 'Ahorro automático' },
-      { date: 'Hace 2 semanas', amount: 95_000, label: 'Ahorro automático' },
-      { date: '28 abr', amount: 120_000, label: 'Ahorro automático' },
+      { date: 'Hoy', amount: 150, label: 'Ahorro automático' },
+      { date: 'Hace 2 semanas', amount: 95, label: 'Ahorro automático' },
+      { date: '28 abr', amount: 120, label: 'Ahorro automático' },
     ],
   },
   {
-    id: 'auto', name: 'Mi auto', emoji: '🚙', saved: 1_720_000, target: 8_500_000,
+    id: 'auto', name: 'Mi auto', emoji: '🚙', currency: 'ARS', saved: 1_720_000, target: 8_500_000,
     deadline: 'Jun 2028', color: '#d99b45', createdAt: '04 may 2025',
     contributions: [{ date: 'Hace 2 semanas', amount: 65_000, label: 'Ahorro automático' }, { date: '28 abr', amount: 82_000, label: 'Ahorro automático' }],
   },
   {
-    id: 'terreno', name: 'Terreno', emoji: '🌿', saved: 920_000, target: 6_000_000,
+    id: 'terreno', name: 'Terreno', emoji: '🌿', currency: 'USD', saved: 920, target: 60_000,
     deadline: 'Mar 2029', color: '#8aa89a', createdAt: '18 jun 2025',
-    contributions: [{ date: 'Hace 3 semanas', amount: 42_000, label: 'Ahorro automático' }, { date: '28 abr', amount: 57_000, label: 'Ahorro automático' }],
+    contributions: [{ date: 'Hace 3 semanas', amount: 42, label: 'Ahorro automático' }, { date: '28 abr', amount: 57, label: 'Ahorro automático' }],
   },
 ]
 
@@ -89,7 +93,7 @@ function recentDayLabel(index: number) {
 
 export const initialMovements: Movement[] = rawMovements.map((row, index) => ({
   id: `movement-${index + 1}`,
-  day: recentDayLabel(index), merchant: row[1], category: row[2], amount: row[3], icon: row[4], tone: row[5],
+  day: recentDayLabel(index), merchant: row[1], category: row[2], amount: row[3], currency: 'ARS', icon: row[4], tone: row[5],
   date: recentDayLabel(index),
 }))
 
@@ -112,11 +116,17 @@ export const tips = [
 
 export const formatMoney = (amount: number) => `$${Math.round(amount).toLocaleString('es-AR')}`
 
+export function formatCurrency(amount: number, currency: Currency) {
+  const rounded = Math.round(amount).toLocaleString('es-AR')
+  return currency === 'USD' ? `US$ ${rounded}` : `$${rounded}`
+}
+
 const goalWeights: Record<string, number> = { casa: 0.55, auto: 0.27, terreno: 0.18 }
 
 export function goalShare(goal: Goal, goals: Goal[]) {
+  const eligibleGoals = goals.filter((item) => item.currency === goal.currency)
   const weight = goalWeights[goal.id] ?? 0.2
-  const totalWeight = goals.reduce((sum, item) => sum + (goalWeights[item.id] ?? 0.2), 0)
+  const totalWeight = eligibleGoals.reduce((sum, item) => sum + (goalWeights[item.id] ?? 0.2), 0)
   return totalWeight > 0 ? weight / totalWeight : 1
 }
 

@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, Home, LockKeyhole, Wallet } from 'lucide-react'
-import { formatMoney, monthlyIncome } from '@/lib/ahorroya-data'
+import { formatCurrency, type Currency } from '@/lib/ahorroya-data'
+import { CurrencyPicker } from './currency-picker'
 
-export type SetupValues = { goalName: string; goalTarget: number; goalEmoji: string; goalDeadline: string; percentage: number; income: number }
+export type SetupValues = { goalName: string; goalTarget: number; goalEmoji: string; goalDeadline: string; goalCurrency: Currency; percentage: number; income: number; incomeCurrency: Currency }
 
 const emojiChoices = ['🏡', '🚙', '🌿', '✈️', '🎓']
 
@@ -14,11 +15,14 @@ export function Onboarding({ onComplete }: { onComplete: (values: SetupValues) =
   const [connecting, setConnecting] = useState(false)
   const [connected, setConnected] = useState(false)
   const [goalName, setGoalName] = useState('Mi casa')
-  const [goalTarget, setGoalTarget] = useState('18000000')
+  const [goalTarget, setGoalTarget] = useState('120000')
   const [goalEmoji, setGoalEmoji] = useState('🏡')
+  const [goalCurrency, setGoalCurrency] = useState<Currency>('USD')
+  const [incomeCurrency, setIncomeCurrency] = useState<Currency>('USD')
+  const [income, setIncome] = useState('3500')
   const [goalDeadline, setGoalDeadline] = useState('Oct 2029')
   const [percentage, setPercentage] = useState(15)
-  const income = monthlyIncome
+  const numericIncome = Number(income) || 0
 
   const connect = (name: string) => {
     setProvider(name)
@@ -35,7 +39,7 @@ export function Onboarding({ onComplete }: { onComplete: (values: SetupValues) =
       <div className="onboarding-progress"><span style={{ width: `${((step + 1) / 3) * 100}%` }} /></div>
       <section className="onboarding-content" key={step}>
         {step === 0 && <div className="welcome-step">
-          <div className="welcome-art" aria-hidden="true"><div className="art-orbit orbit-one" /><div className="art-orbit orbit-two" /><div className="art-sun">✦</div><div className="art-card"><span>Tu casa</span><strong>$ 4.850.000</strong><div className="art-progress"><i /></div><small>27% del camino</small></div><div className="art-leaf leaf-one">✳</div><div className="art-leaf leaf-two">✳</div></div>
+          <div className="welcome-art" aria-hidden="true"><div className="art-orbit orbit-one" /><div className="art-orbit orbit-two" /><div className="art-sun">✦</div><div className="art-card"><span>Tu casa</span><strong>US$ 4.850</strong><div className="art-progress"><i /></div><small>6% del camino</small></div><div className="art-leaf leaf-one">✳</div><div className="art-leaf leaf-two">✳</div></div>
           <p className="eyebrow">PASO 1 · TU NUEVO COMIENZO</p>
           <h1>Ahorrá sin pensarlo.<br /><em>Mirá tu meta acercarse.</em></h1>
           <p className="onboarding-copy">AhorroYa separa una parte de tus ingresos antes de que puedas gastarla. Así, tus planes también tienen lugar en tu día a día.</p>
@@ -66,15 +70,18 @@ export function Onboarding({ onComplete }: { onComplete: (values: SetupValues) =
           <p className="onboarding-copy">Elegí una meta para empezar. Después podés sumar todas las que quieras.</p>
           <div className="goal-emoji-picker" aria-label="Elegí un ícono">{emojiChoices.map((emoji) => <button type="button" key={emoji} onClick={() => setGoalEmoji(emoji)} className={goalEmoji === emoji ? 'selected' : ''} aria-label={`Elegir ${emoji}`}>{emoji}</button>)}</div>
           <label className="field-label">Nombre de tu meta<input value={goalName} onChange={(event) => setGoalName(event.target.value)} placeholder="Ej. Mi casa" /></label>
-          <label className="field-label">¿Cuánto necesitás?<span className="money-input"><span>$</span><input inputMode="numeric" value={Number(goalTarget).toLocaleString('es-AR')} onChange={(event) => setGoalTarget(event.target.value.replace(/\D/g, ''))} /></span></label>
+          <CurrencyPicker currency={goalCurrency} onChange={setGoalCurrency} name="goal-currency" />
+          <label className="field-label">¿Cuánto necesitás?<span className="money-input"><span>{goalCurrency === 'USD' ? 'US$' : '$'}</span><input inputMode="numeric" value={Number(goalTarget).toLocaleString('es-AR')} onChange={(event) => setGoalTarget(event.target.value.replace(/\D/g, ''))} /></span></label>
           <label className="field-label">¿Para cuándo te gustaría?<select value={goalDeadline} onChange={(event) => setGoalDeadline(event.target.value)}><option>Oct 2028</option><option>Oct 2029</option><option>Oct 2030</option><option>Dic 2031</option></select></label>
+          <div className="onboarding-income"><CurrencyPicker currency={incomeCurrency} onChange={setIncomeCurrency} name="onboarding-income-currency" /><label className="field-label">Tu ingreso mensual aproximado<span className="money-input"><span>{incomeCurrency === 'USD' ? 'US$' : '$'}</span><input inputMode="numeric" value={income ? Number(income).toLocaleString('es-AR') : ''} onChange={(event) => setIncome(event.target.value.replace(/\D/g, ''))} placeholder={incomeCurrency === 'USD' ? '3.500' : '1.250.000'} /></span></label></div>
           <div className="saving-rate-box">
             <div className="rate-heading"><span>De cada ingreso, guardar</span><strong>{percentage}%</strong></div>
             <input aria-label="Porcentaje de ahorro" className="range-input" type="range" min="5" max="40" step="1" value={percentage} style={{ '--range-progress': `${((percentage - 5) / 35) * 100}%` } as React.CSSProperties} onChange={(event) => setPercentage(Number(event.target.value))} />
             <div className="range-labels"><span>5%</span><span>40%</span></div>
-            <p>Si cobrás <strong>{formatMoney(income)}</strong>, apartamos <strong className="green-text">{formatMoney(income * percentage / 100)}</strong></p>
+            <p>Si cobrás <strong>{formatCurrency(numericIncome, incomeCurrency)}</strong>, apartamos <strong className="green-text">{formatCurrency(numericIncome * percentage / 100, incomeCurrency)}</strong></p>
+            <small className="currency-note">Tus metas en dólares reciben ingresos en dólares. No convertimos entre monedas.</small>
           </div>
-          <div className="onboarding-actions"><button className="button-quiet" onClick={back}><ArrowLeft size={17} /> Atrás</button><button className="button-primary" onClick={() => onComplete({ goalName: goalName.trim() || 'Mi casa', goalTarget: Number(goalTarget) || 18_000_000, goalEmoji, goalDeadline, percentage, income })}>Ver mi plan <ArrowRight size={17} /></button></div>
+          <div className="onboarding-actions"><button className="button-quiet" onClick={back}><ArrowLeft size={17} /> Atrás</button><button className="button-primary" onClick={() => onComplete({ goalName: goalName.trim() || 'Mi casa', goalTarget: Number(goalTarget) || (goalCurrency === 'USD' ? 120_000 : 18_000_000), goalEmoji, goalDeadline, goalCurrency, percentage, income: numericIncome || (incomeCurrency === 'USD' ? 3_500 : 1_250_000), incomeCurrency })}>Ver mi plan <ArrowRight size={17} /></button></div>
         </div>}
       </section>
       <footer className="onboarding-footer">Hecho para que tus planes también lleguen a fin de mes.</footer>
