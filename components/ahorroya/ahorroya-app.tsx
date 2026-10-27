@@ -1,0 +1,88 @@
+'use client'
+
+import { useCallback, useState } from 'react'
+import { BookOpen, ChartNoAxesCombined, Home, ListChecks, Target } from 'lucide-react'
+import { goalShare, initialGoals, initialMovements, initialSpendable, monthlyIncome, type Goal, type Movement } from '@/lib/ahorroya-data'
+import { Onboarding, type SetupValues } from './onboarding'
+import { SalaryOverlay } from './salary-overlay'
+import { CreateGoalModal, ExpensesScreen, GoalDetailScreen, GoalsScreen, HomeScreen, LearnScreen, RulesScreen, type RuleState } from './screens'
+
+type Tab = 'Inicio' | 'Metas' | 'Gastos' | 'Reglas' | 'Aprender'
+type SalaryPhase = 'entering' | 'dividing' | 'done'
+const navigation: { label: Tab; icon: typeof Home }[] = [
+  { label: 'Inicio', icon: Home }, { label: 'Metas', icon: Target }, { label: 'Gastos', icon: ChartNoAxesCombined }, { label: 'Reglas', icon: ListChecks }, { label: 'Aprender', icon: BookOpen },
+]
+
+export function AhorroYaApp() {
+  const [onboarding, setOnboarding] = useState(true)
+  const [activeTab, setActiveTab] = useState<Tab>('Inicio')
+  const [goals, setGoals] = useState<Goal[]>(initialGoals)
+  const [movements, setMovements] = useState<Movement[]>(initialMovements)
+  const [selectedGoal, setSelectedGoal] = useState<string | null>(null)
+  const [spendable, setSpendable] = useState(initialSpendable)
+  const [saveRate, setSaveRate] = useState(15)
+  const [income, setIncome] = useState(monthlyIncome)
+  const [salaryCount, setSalaryCount] = useState(0)
+  const [salaryPhase, setSalaryPhase] = useState<SalaryPhase | null>(null)
+  const [salarySaved, setSalarySaved] = useState(0)
+  const [salarySpendable, setSalarySpendable] = useState(0)
+  const [rules, setRules] = useState<RuleState>({ first: true, rounding: false, weekly: false })
+  const [createGoalOpen, setCreateGoalOpen] = useState(false)
+
+  const finishOnboarding = (values: SetupValues) => {
+    setSaveRate(values.percentage)
+    setIncome(values.income)
+    setGoals((current) => current.map((goal, index) => index === 0 ? { ...goal, name: values.goalName, emoji: values.goalEmoji, target: values.goalTarget, deadline: values.goalDeadline } : goal))
+    setOnboarding(false)
+  }
+
+  const simulateSalary = () => {
+    const saved = Math.round(income * saveRate / 100)
+    const available = income - saved
+    setSalarySaved(saved)
+    setSalarySpendable(available)
+    setSalaryPhase('entering')
+    window.setTimeout(() => setSalaryPhase((phase) => phase === 'entering' ? 'dividing' : phase), 1200)
+    window.setTimeout(() => {
+      setGoals((current) => current.map((goal) => {
+        const contribution = Math.round(saved * goalShare(goal, current))
+        return { ...goal, saved: goal.saved + contribution, contributions: [{ date: 'Hoy', amount: contribution, label: 'Ahorro automático' }, ...goal.contributions] }
+      }))
+      setSpendable((current) => current + available)
+      setSalaryCount((current) => current + 1)
+      setMovements((current) => [{ id: `salary-${Date.now()}`, merchant: 'Sueldo · Banco Demo', category: 'Ingreso', amount: -income, icon: '✳', tone: '#dff1e8', day: 'Hoy', date: 'Hoy' }, ...current])
+      setSalaryPhase((phase) => phase ? 'done' : null)
+    }, 2700)
+  }
+
+  const handleSalaryClose = useCallback(() => setSalaryPhase(null), [])
+  const openGoal = (id: string) => { setSelectedGoal(id); setActiveTab('Metas') }
+  const createGoal = (goal: Omit<Goal, 'id' | 'createdAt' | 'contributions'>) => {
+    const newGoal: Goal = { ...goal, id: `goal-${Date.now()}`, createdAt: 'Hoy', contributions: [] }
+    setGoals((current) => [...current, newGoal])
+    setCreateGoalOpen(false)
+    setSelectedGoal(newGoal.id)
+  }
+  const withdraw = (id: string, amount: number) => {
+    setGoals((current) => current.map((goal) => goal.id === id ? { ...goal, saved: Math.max(0, goal.saved - amount) } : goal))
+    setSpendable((current) => current + amount)
+  }
+  const toggleRule = (name: keyof RuleState) => setRules((current) => ({ ...current, [name]: !current[name] }))
+
+  if (onboarding) return <Onboarding onComplete={finishOnboarding} />
+
+  const chosenGoal = goals.find((goal) => goal.id === selectedGoal)
+  return <main className="app-frame">
+    <aside className="desktop-sidebar"><div className="brand-lockup"><span className="brand-mark">a.</span><span>AhorroYa</span></div><p className="sidebar-label">TU ESPACIO</p><nav aria-label="Navegación principal">{navigation.map(({ label, icon: Icon }) => <button key={label} className={`sidebar-nav-item ${activeTab === label ? 'active' : ''}`} onClick={() => { setActiveTab(label); if (label !== 'Metas') setSelectedGoal(null) }}><Icon size={19} />{label}{activeTab === label && <span />}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-plan-icon">✳</div><strong>Tu plan avanza.</strong><span>A tu ritmo, todos los días.</span></div><div className="profile-mini"><span>V</span><div><strong>Vale</strong><small>Plan personal · Demo</small></div></div></aside>
+    <div className="app-main"><header className="mobile-brand"><div className="brand-lockup"><span className="brand-mark">a.</span><span>AhorroYa</span></div><span className="avatar-button" aria-label="Vale">V</span></header>
+      {activeTab === 'Inicio' && <HomeScreen spendable={spendable} goals={goals} income={income} savingRate={saveRate} onGoal={openGoal} onSalary={simulateSalary} salaryCount={salaryCount} />}
+      {activeTab === 'Metas' && (chosenGoal ? <GoalDetailScreen goal={chosenGoal} goals={goals} income={income} savingRate={saveRate} onBack={() => setSelectedGoal(null)} onWithdraw={withdraw} /> : <GoalsScreen goals={goals} income={income} savingRate={saveRate} onGoal={setSelectedGoal} onCreate={() => setCreateGoalOpen(true)} />)}
+      {activeTab === 'Gastos' && <ExpensesScreen movements={movements} />}
+      {activeTab === 'Reglas' && <RulesScreen rules={rules} onToggle={toggleRule} savingRate={saveRate} />}
+      {activeTab === 'Aprender' && <LearnScreen />}
+      <nav className="bottom-nav" aria-label="Navegación inferior">{navigation.map(({ label, icon: Icon }) => <button key={label} className={`bottom-nav-item ${activeTab === label ? 'active' : ''}`} onClick={() => { setActiveTab(label); if (label !== 'Metas') setSelectedGoal(null) }} aria-current={activeTab === label ? 'page' : undefined}><span><Icon size={20} /></span><small>{label}</small></button>)}</nav>
+    </div>
+    {salaryPhase && <SalaryOverlay phase={salaryPhase} income={income} saved={salarySaved} spendable={salarySpendable} goals={goals} onClose={handleSalaryClose} />}
+    {createGoalOpen && <CreateGoalModal onClose={() => setCreateGoalOpen(false)} onCreate={createGoal} />}
+  </main>
+}
