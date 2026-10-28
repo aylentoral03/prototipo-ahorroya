@@ -1,29 +1,6 @@
-export type Currency = 'ARS' | 'USD'
+import type { BudgetCategory, Currency, Debt, Goal, Movement } from './finance-types'
 
-export type Goal = {
-  id: string
-  name: string
-  currency: Currency
-  emoji: string
-  saved: number
-  target: number
-  deadline: string
-  color: string
-  createdAt: string
-  contributions: { date: string; amount: number; label: string }[]
-}
-
-export type Movement = {
-  id: string
-  merchant: string
-  category: string
-  amount: number
-  currency: Currency
-  icon: string
-  tone: string
-  day: string
-  date: string
-}
+export type { BudgetCategory, Currency, Debt, Goal, Movement } from './finance-types'
 
 export const monthlyIncome = 1_250_000
 export const initialSpendable = 684_500
@@ -97,13 +74,19 @@ export const initialMovements: Movement[] = rawMovements.map((row, index) => ({
   date: recentDayLabel(index),
 }))
 
-export const categoryBudgets = [
-  { name: 'Supermercado', amount: 288_450, change: 8, icon: '🛒', color: '#14634f' },
-  { name: 'Delivery', amount: 196_500, change: 42, icon: '🥡', color: '#e9876d' },
-  { name: 'Transporte', amount: 142_900, change: -6, icon: '🚕', color: '#6685aa' },
-  { name: 'Salidas', amount: 118_200, change: 12, icon: '☕', color: '#d99b45' },
-  { name: 'Servicios', amount: 96_400, change: 3, icon: '💡', color: '#7d9e7d' },
-  { name: 'Suscripciones', amount: 14_897, change: 0, icon: '♫', color: '#9d86be' },
+export const categoryBudgets: BudgetCategory[] = [
+  { name: 'Supermercado', amount: 288_450, limit: 360_000, change: 8, icon: '▦', color: '#14634f' },
+  { name: 'Delivery', amount: 196_500, limit: 180_000, change: 42, icon: '◌', color: '#e9876d' },
+  { name: 'Transporte', amount: 142_900, limit: 190_000, change: -6, icon: '↗', color: '#6685aa' },
+  { name: 'Salidas', amount: 118_200, limit: 150_000, change: 12, icon: '◉', color: '#d99b45' },
+  { name: 'Servicios', amount: 96_400, limit: 130_000, change: 3, icon: '⌂', color: '#7d9e7d' },
+  { name: 'Suscripciones', amount: 14_897, limit: 25_000, change: 0, icon: '▤', color: '#9d86be' },
+]
+
+export const initialDebts: Debt[] = [
+  { id: 'debt-card', name: 'Tarjeta de crédito', creditor: 'Banco Demo', currency: 'ARS', originalBalance: 362_000, balance: 246_500, monthlyPayment: 62_000, dueDate: '10/11/2026', kind: 'Tarjeta' },
+  { id: 'debt-loan', name: 'Préstamo personal', creditor: 'Financiera Demo', currency: 'ARS', originalBalance: 480_000, balance: 213_000, monthlyPayment: 48_000, dueDate: '18/11/2026', kind: 'Préstamo' },
+  { id: 'debt-installments', name: 'Compra en cuotas', creditor: 'Comercio Demo', currency: 'ARS', originalBalance: 195_000, balance: 97_500, monthlyPayment: 32_500, dueDate: '25/11/2026', kind: 'Cuotas' },
 ]
 
 export const tips = [
@@ -118,7 +101,7 @@ export const formatMoney = (amount: number) => `$${Math.round(amount).toLocaleSt
 
 export function formatCurrency(amount: number, currency: Currency) {
   const rounded = Math.round(amount).toLocaleString('es-AR')
-  return currency === 'USD' ? `US$ ${rounded}` : `$${rounded}`
+  return currency === 'USD' ? `USD ${rounded}` : `$${rounded}`
 }
 
 const goalWeights: Record<string, number> = { casa: 0.55, auto: 0.27, terreno: 0.18 }

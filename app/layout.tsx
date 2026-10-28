@@ -1,10 +1,11 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { APP_NAME } from '@/lib/ahorria-config'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'AhorroYa — Ahorrá sin pensarlo',
-  description: 'Una forma más simple de ordenar tu plata, ahorrar en automático y acercarte a tus metas.',
+  title: `${APP_NAME} — Ahorrá sin complicarte`,
+  description: 'Organizá tus gastos, armá metas de ahorro y aprendé finanzas a tu ritmo. Prototipo argentino con datos ficticios.',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -30,7 +31,7 @@ export const viewport: Viewport = {
   themeColor: '#f8f8f3',
   width: 'device-width',
   initialScale: 1,
-  userScalable: false,
+  userScalable: true,
 }
 
 export default function RootLayout({
@@ -39,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es-AR">
+    <html lang="es-AR" data-scroll-behavior="smooth">
       <body className="antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

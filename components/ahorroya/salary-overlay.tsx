@@ -19,9 +19,9 @@ export function SalaryOverlay({ phase, income, currency, saved, spendable, goals
       <div className="salary-sparkle sparkle-a">✦</div><div className="salary-sparkle sparkle-b">✧</div>
       <div className="salary-icon"><span>{phase === 'done' ? <Check size={30} /> : <ArrowDown size={30} />}</span></div>
       <p className="eyebrow">{phase === 'done' ? 'ESO ES TODO' : 'SIMULACIÓN DE INGRESO'}</p>
-      <h2 id="salary-title">{phase === 'entering' ? '¡Llegó tu sueldo!' : phase === 'dividing' ? 'Tu plata ya tiene plan' : 'Ya ahorraste sin pensarlo'}</h2>
-      <p className="salary-description">{phase === 'entering' ? 'Mirá cómo se organiza tu plata automáticamente.' : phase === 'dividing' ? 'Apartamos tu ahorro antes de que puedas gastarlo.' : 'Un paso más cerca de eso que soñás.'}</p>
-      <div className={`salary-amount ${phase !== 'entering' ? 'is-visible' : ''}`}><span>Ingresó a tu cuenta</span><strong>{formatCurrency(income, currency)}</strong></div>
+      <h2 id="salary-title">{phase === 'entering' ? 'Así se vería tu ingreso' : phase === 'dividing' ? 'Un plan para tu plata' : 'Un paso para tus metas'}</h2>
+      <p className="salary-description">{phase === 'entering' ? 'Mirá un ejemplo de cómo podrías organizar tus ingresos.' : phase === 'dividing' ? 'La simulación distribuye el monto según tus metas y preferencias.' : 'Un ejemplo para visualizar tu progreso.'}</p>
+      <div className={`salary-amount ${phase !== 'entering' ? 'is-visible' : ''}`}><span>Ingreso de ejemplo</span><strong>{formatCurrency(income, currency)}</strong></div>
       <div className={`salary-split ${phase === 'entering' ? 'split-hidden' : ''}`}>
         <div className="split-row"><span className="split-icon saved"><Sparkles size={17} /></span><span><strong>Para tus metas</strong><small>{goals.filter((goal) => goal.currency === currency).length} metas en {currency === 'USD' ? 'dólares' : 'pesos'}</small></span><b>{formatCurrency(saved, currency)}</b></div>
         <div className="split-bar"><i style={{ width: `${Math.min(100, (saved / income) * 100)}%` }} /></div>

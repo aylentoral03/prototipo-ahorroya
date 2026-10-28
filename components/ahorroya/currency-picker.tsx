@@ -8,7 +8,7 @@ export function CurrencyPicker({ currency, onChange, name = 'currency' }: { curr
     <div className="currency-options">
       {(['USD', 'ARS'] as const).map((option) => <label className={`currency-option ${currency === option ? 'selected' : ''}`} key={option}>
         <input type="radio" name={name} value={option} checked={currency === option} onChange={() => onChange(option)} />
-        <span className="currency-code">{option === 'USD' ? 'US$' : 'AR$'}</span>
+        <span className="currency-code">{option === 'USD' ? 'USD' : 'ARS'}</span>
         <span className="currency-option-copy"><strong>{option === 'USD' ? 'Dólares' : 'Pesos'}</strong><small>{option === 'USD' ? 'USD' : 'ARS'}</small></span>
       </label>)}
     </div>

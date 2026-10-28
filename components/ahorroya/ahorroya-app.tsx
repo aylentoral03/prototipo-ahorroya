@@ -1,24 +1,33 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { BookOpen, ChartNoAxesCombined, Home, ListChecks, Target } from 'lucide-react'
-import { goalShare, initialGoals, initialMovements, initialSpendable, type Currency, type Goal, type Movement } from '@/lib/ahorroya-data'
+import { BookOpen, ChartNoAxesCombined, CreditCard, Home, ListChecks, ShieldCheck, Target } from 'lucide-react'
+import { categoryBudgets, goalShare, initialDebts, initialGoals, initialMovements, initialSpendable, type Currency, type Goal, type Movement } from '@/lib/ahorroya-data'
+import type { BudgetCategory, Debt, NewDebtInput, NewExpenseInput } from '@/lib/finance-types'
+import { addDemoExpenseToBudget, applyDemoDebtPayment, createDemoDebt, createDemoExpense, updateDemoBudgetLimit } from '@/lib/demo-finance-service'
+import { APP_NAME } from '@/lib/ahorria-config'
+import { AccessScreen } from './access-screen'
 import { Onboarding, type SetupValues } from './onboarding'
 import { SalaryOverlay } from './salary-overlay'
 import { IncomeEntry } from './income-entry'
-import { CreateGoalModal, ExpensesScreen, GoalDetailScreen, GoalsScreen, HomeScreen, LearnScreen, RulesScreen, type RuleState } from './screens'
+import { DebtsScreen } from './debts-screen'
+import { ExpensesScreen } from './expenses-screen'
+import { CreateGoalModal, GoalDetailScreen, GoalsScreen, HomeScreen, LearnScreen, RulesScreen, type RuleState } from './screens'
 
-type Tab = 'Inicio' | 'Metas' | 'Gastos' | 'Reglas' | 'Aprender'
+type Tab = 'Inicio' | 'Metas' | 'Gastos' | 'Deudas' | 'Reglas' | 'Aprender'
 type SalaryPhase = 'entering' | 'dividing' | 'done'
 const navigation: { label: Tab; icon: typeof Home }[] = [
-  { label: 'Inicio', icon: Home }, { label: 'Metas', icon: Target }, { label: 'Gastos', icon: ChartNoAxesCombined }, { label: 'Reglas', icon: ListChecks }, { label: 'Aprender', icon: BookOpen },
+  { label: 'Inicio', icon: Home }, { label: 'Metas', icon: Target }, { label: 'Gastos', icon: ChartNoAxesCombined }, { label: 'Deudas', icon: CreditCard }, { label: 'Reglas', icon: ListChecks }, { label: 'Aprender', icon: BookOpen },
 ]
 
 export function AhorroYaApp() {
+  const [accessOpen, setAccessOpen] = useState(true)
   const [onboarding, setOnboarding] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('Inicio')
   const [goals, setGoals] = useState<Goal[]>(initialGoals)
   const [movements, setMovements] = useState<Movement[]>(initialMovements)
+  const [budgets, setBudgets] = useState<BudgetCategory[]>(categoryBudgets)
+  const [debts, setDebts] = useState<Debt[]>(initialDebts)
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null)
   const [spendable, setSpendable] = useState(initialSpendable)
   const [saveRate, setSaveRate] = useState(15)
@@ -76,7 +85,7 @@ export function AhorroYaApp() {
       if (currency === 'USD') setUsdSpendable((current) => current + available)
       else setSpendable((current) => current + available)
       setSalaryCount((current) => current + 1)
-      setMovements((current) => [{ id: `income-${Date.now()}`, merchant: `Ingreso · ${currency === 'USD' ? 'En dólares' : 'Banco Demo'}`, category: 'Ingreso', amount: -amount, currency, icon: '✳', tone: '#dff1e8', day: 'Hoy', date: 'Hoy' }, ...current])
+      setMovements((current) => [{ id: `income-${Date.now()}`, merchant: `Ingreso · ${currency === 'USD' ? 'Dólares' : 'Datos de ejemplo'}`, category: 'Ingreso', amount: -amount, currency, icon: '✳', tone: '#dff1e8', day: 'Hoy', date: 'Hoy' }, ...current])
       setSalaryPhase((phase) => phase ? 'done' : null)
     }, 2700)
   }
@@ -95,16 +104,27 @@ export function AhorroYaApp() {
     else setSpendable((current) => current + amount)
   }
   const toggleRule = (name: keyof RuleState) => setRules((current) => ({ ...current, [name]: !current[name] }))
+  const addDemoExpense = (input: NewExpenseInput) => {
+    const expense = createDemoExpense(input, budgets)
+    setMovements((current) => [expense, ...current])
+    setBudgets((current) => addDemoExpenseToBudget(current, expense))
+  }
+  const updateBudget = (category: string, limit: number) => setBudgets((current) => updateDemoBudgetLimit(current, category, limit))
+  const addDemoDebt = (input: NewDebtInput) => setDebts((current) => [...current, createDemoDebt(input)])
+  const addDemoDebtPayment = (id: string, amount: number) => setDebts(applyDemoDebtPayment(debts, id, amount))
 
+  if (accessOpen) return <AccessScreen onContinue={() => setAccessOpen(false)} />
   if (onboarding) return <Onboarding onComplete={finishOnboarding} />
 
   const chosenGoal = goals.find((goal) => goal.id === selectedGoal)
   return <main className="app-frame">
-    <aside className="desktop-sidebar"><div className="brand-lockup"><span className="brand-mark">a.</span><span>AhorroYa</span></div><p className="sidebar-label">TU ESPACIO</p><nav aria-label="Navegación principal">{navigation.map(({ label, icon: Icon }) => <button key={label} className={`sidebar-nav-item ${activeTab === label ? 'active' : ''}`} onClick={() => { setActiveTab(label); if (label !== 'Metas') setSelectedGoal(null) }}><Icon size={19} />{label}{activeTab === label && <span />}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-plan-icon">✳</div><strong>Tu plan avanza.</strong><span>A tu ritmo, todos los días.</span></div><div className="profile-mini"><span>V</span><div><strong>Vale</strong><small>Plan personal · Demo</small></div></div></aside>
-    <div className="app-main"><header className="mobile-brand"><div className="brand-lockup"><span className="brand-mark">a.</span><span>AhorroYa</span></div><span className="avatar-button" aria-label="Vale">V</span></header>
+    <aside className="desktop-sidebar"><div className="brand-lockup"><span className="brand-mark">a.</span><span>{APP_NAME}</span></div><p className="sidebar-label">TU ESPACIO</p><nav aria-label="Navegación principal">{navigation.map(({ label, icon: Icon }) => <button key={label} className={`sidebar-nav-item ${activeTab === label ? 'active' : ''}`} onClick={() => { setActiveTab(label); if (label !== 'Metas') setSelectedGoal(null) }}><Icon size={19} />{label}{activeTab === label && <span />}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-plan-icon">✳</div><strong>Tu plan avanza.</strong><span>A tu ritmo, todos los días.</span></div><div className="profile-mini"><span>V</span><div><strong>Vale</strong><small>Plan personal · Demo</small></div></div></aside>
+    <div className="app-main"><header className="mobile-brand"><div className="brand-lockup"><span className="brand-mark">a.</span><span>{APP_NAME}</span></div><span className="avatar-button" aria-label="Vale">V</span></header>
+      <div className="app-demo-banner" role="note"><ShieldCheck size={14} /><span><strong>Demo:</strong> saldos y movimientos ilustrativos; no hay operaciones reales.</span></div>
       {activeTab === 'Inicio' && <HomeScreen spendable={spendable} usdSpendable={usdSpendable} goals={goals} income={income} incomeCurrency={incomeCurrency} savingRate={saveRate} onGoal={openGoal} onSalary={() => setIncomeModalOpen(true)} salaryCount={salaryCount} />}
       {activeTab === 'Metas' && (chosenGoal ? <GoalDetailScreen goal={chosenGoal} goals={goals} income={income} incomeCurrency={incomeCurrency} savingRate={saveRate} onBack={() => setSelectedGoal(null)} onWithdraw={withdraw} /> : <GoalsScreen goals={goals} income={income} incomeCurrency={incomeCurrency} savingRate={saveRate} onGoal={setSelectedGoal} onCreate={() => setCreateGoalOpen(true)} />)}
-      {activeTab === 'Gastos' && <ExpensesScreen movements={movements} />}
+      {activeTab === 'Gastos' && <ExpensesScreen movements={movements} budgets={budgets} onAddExpense={addDemoExpense} onUpdateBudget={updateBudget} />}
+      {activeTab === 'Deudas' && <DebtsScreen debts={debts} onCreate={addDemoDebt} onPayment={addDemoDebtPayment} />}
       {activeTab === 'Reglas' && <RulesScreen rules={rules} onToggle={toggleRule} savingRate={saveRate} income={income} incomeCurrency={incomeCurrency} />}
       {activeTab === 'Aprender' && <LearnScreen />}
       <nav className="bottom-nav" aria-label="Navegación inferior">{navigation.map(({ label, icon: Icon }) => <button key={label} className={`bottom-nav-item ${activeTab === label ? 'active' : ''}`} onClick={() => { setActiveTab(label); if (label !== 'Metas') setSelectedGoal(null) }} aria-current={activeTab === label ? 'page' : undefined}><span><Icon size={20} /></span><small>{label}</small></button>)}</nav>

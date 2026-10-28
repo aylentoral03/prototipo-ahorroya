@@ -1,5 +1,5 @@
-import { AhorroYaApp } from '@/components/ahorroya/ahorroya-app'
+import { LandingPage } from '@/components/ahorroya/landing-page'
 
 export default function Page() {
-  return <AhorroYaApp />
+  return <LandingPage />
 }
